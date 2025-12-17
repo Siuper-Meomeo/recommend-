@@ -399,27 +399,11 @@ def movie_detail(movie_id: int):
 @app.route("/admin")
 @admin_required
 def admin_view():
-    # Import visualization module chỉ khi cần (lazy import để giảm tải khi deploy)
-    from visualization import create_visualizations
-    
     # ======================
     # Load data (use cached versions)
     # ======================
     ratings = _get_ratings_cached()
     movies = _load_movies_df_for_ui()
-
-    # Sample data for visualizations to save memory (use 10% or max 100k rows)
-    max_rows = min(100000, len(ratings))
-    if len(ratings) > max_rows:
-        ratings_sample = ratings.sample(n=max_rows, random_state=42)
-    else:
-        ratings_sample = ratings
-
-    df = ratings_sample.merge(
-        movies[["movieId", "title", "genres"]],
-        on="movieId",
-        how="left"
-    )
 
     # ======================
     # DATASET STATISTICS
@@ -443,9 +427,32 @@ def admin_view():
     }
 
     # ======================
-    # VISUALIZATIONS (tách riêng để giảm tải khi deploy)
+    # VISUALIZATIONS (đọc từ file đã pre-generate để tránh OOM)
     # ======================
-    visualizations = create_visualizations(df)
+    visualizations = {}
+    
+    # Đường dẫn đến các file HTML đã generate
+    viz_dir = BASE_DIR / "app" / "static" / "visualizations"
+    
+    viz_files = {
+        "rating_distribution": viz_dir / "rating_distribution.html",
+        "genre_frequency": viz_dir / "genre_frequency.html",
+        "top_movies": viz_dir / "top_movies.html",
+        "genre_rating_heatmap": viz_dir / "genre_rating_heatmap.html",
+    }
+    
+    # Đọc các file HTML đã generate
+    for key, file_path in viz_files.items():
+        if file_path.exists():
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    visualizations[key] = f.read()
+            except Exception as e:
+                print(f"Warning: Could not load {key}: {e}")
+                visualizations[key] = f"<div class='alert alert-warning'>Visualization not available. Run: python scripts/generate_admin_visualizations.py</div>"
+        else:
+            # Fallback: generate on-the-fly nếu file chưa có (cho development)
+            visualizations[key] = f"<div class='alert alert-info'>Visualization not pre-generated. Run: python scripts/generate_admin_visualizations.py</div>"
 
     # ======================
     # LOAD MODEL METRICS (optional)

@@ -84,3 +84,4 @@ def create_visualizations(df: pd.DataFrame) -> dict:
         "genre_rating_heatmap": fig_heat.to_html(full_html=False),
     }
 
+
