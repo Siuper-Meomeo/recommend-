@@ -458,9 +458,12 @@ def main():
                 print("SKIPPED (no data)")
                 continue
             
-            output_path = OUTPUT_DIR / f"{filename}.html"
-            fig.write_html(str(output_path))
+            output_path = OUTPUT_DIR / f"{filename}.json"
+            with open(output_path, "w", encoding="utf-8") as f:
+                json.dump(fig.to_plotly_json(), f, ensure_ascii=False)
+
             print(f"✓ Saved to {output_path}")
+
             
         except Exception as e:
             print(f"✗ ERROR: {e}")

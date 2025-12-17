@@ -190,7 +190,62 @@ def for_you():
     if user_id is None:
         return redirect(url_for("login"))
 
-    result = recommend_for_you(int(user_id), top_k=10)
+    user_id_int = int(user_id)
+    
+    # ======================
+    # Lấy 10 rating gần đây nhất của user (tối ưu memory)
+    # ======================
+    ratings = _get_ratings_cached()
+    
+    # Filter user ratings (chỉ tạo view, không copy)
+    user_mask = ratings["userId"].astype(int) == user_id_int
+    user_ratings = ratings[user_mask]
+    n_ratings = len(user_ratings)  # Tính ngay từ đây, tránh query lại
+
+    recent_ratings = []
+    if n_ratings > 0:
+        # Chỉ lấy các cột cần thiết trước khi sort để giảm memory
+        cols_needed = ["movieId", "rating"]
+        if "timestamp" in user_ratings.columns:
+            cols_needed.append("timestamp")
+        
+        user_ratings_subset = user_ratings[cols_needed]
+        
+        # Sort và lấy top 10 (không copy toàn bộ)
+        if "timestamp" in user_ratings_subset.columns:
+            user_ratings_top10 = user_ratings_subset.nlargest(10, "timestamp")
+        else:
+            # Nếu không có timestamp, lấy 10 dòng cuối cùng (giả định là mới nhất)
+            user_ratings_top10 = user_ratings_subset.tail(10)
+
+        # Join với movies để lấy title, genres (chỉ merge với 10 dòng)
+        movies = _load_movies_df_for_ui()
+        merged = user_ratings_top10.merge(
+            movies[["movieId", "title", "genres"]],
+            on="movieId",
+            how="left"
+        )
+
+        for _, row in merged.iterrows():
+            ts = row.get("timestamp")
+            ts_str = ""
+            if pd.notna(ts):
+                try:
+                    ts_str = pd.to_datetime(int(ts), unit="s").strftime("%Y-%m-%d %H:%M")
+                except Exception:
+                    ts_str = str(ts)
+
+            recent_ratings.append(
+                {
+                    "movieId": int(row.get("movieId")),
+                    "title": row.get("title", "Unknown"),
+                    "genres": row.get("genres", ""),
+                    "rating": float(row.get("rating", 0.0)),
+                    "timestamp": ts_str,
+                }
+            )
+
+    result = recommend_for_you(user_id_int, top_k=10)
 
     recs = []
     for _, row in result.recs_df.iterrows():
@@ -208,8 +263,6 @@ def for_you():
             "poster_url": poster,
         })
 
-    n_ratings = int((_get_ratings_cached()["userId"].astype(int) == int(user_id)).sum())
-
     return render_template(
         "for_you.html",
         user_id=user_id,
@@ -218,6 +271,7 @@ def for_you():
         recs=recs,
         n_ratings=n_ratings,
         k_threshold=MIN_RATINGS_FOR_CF,
+        recent_ratings=recent_ratings,
     )
 
 
@@ -342,12 +396,12 @@ def movie_detail(movie_id: int):
 # -------------------------------------------------
 # ADMIN
 # -------------------------------------------------
-import plotly.express as px
-import numpy as np
-
 @app.route("/admin")
 @admin_required
 def admin_view():
+    # Import visualization module chỉ khi cần (lazy import để giảm tải khi deploy)
+    from visualization import create_visualizations
+    
     # ======================
     # Load data (use cached versions)
     # ======================
@@ -389,71 +443,9 @@ def admin_view():
     }
 
     # ======================
-    # VISUALIZATIONS
+    # VISUALIZATIONS (tách riêng để giảm tải khi deploy)
     # ======================
-
-    # Rating distribution
-    fig_rating = px.histogram(
-        df,
-        x="rating",
-        nbins=10,
-        title="Rating Distribution"
-    )
-
-    # Genre frequency
-    g = (
-        df.dropna(subset=["genres"])
-          .assign(genres=df["genres"].astype(str).str.split("|"))
-          .explode("genres")
-    )
-    genre_counts = g["genres"].value_counts().head(15).reset_index()
-    genre_counts.columns = ["genre", "count"]
-
-    fig_genre = px.bar(
-        genre_counts,
-        x="genre",
-        y="count",
-        title="Genre Frequency (Top 15)"
-    )
-
-    # Top movies
-    top_items = df["title"].value_counts().head(15).reset_index()
-    top_items.columns = ["title", "count"]
-
-    fig_top = px.bar(
-        top_items,
-        x="title",
-        y="count",
-        title="Top Movies by Rating Count"
-    )
-    fig_top.update_layout(xaxis_tickangle=-30)
-
-    # Genre × Rating heatmap
-    top10_genres = set(genre_counts["genre"].head(10))
-    g2 = g[g["genres"].isin(top10_genres)].copy()
-    g2["rating_round"] = g2["rating"].round().astype(int).clip(1, 5)
-
-    pivot = pd.pivot_table(
-        g2,
-        index="genres",
-        columns="rating_round",
-        values="movieId",
-        aggfunc="count",
-        fill_value=0
-    )
-
-    fig_heat = px.imshow(
-        pivot,
-        title="Genre × Rating Heatmap",
-        aspect="auto"
-    )
-
-    visualizations = {
-        "rating_distribution": fig_rating.to_html(full_html=False),
-        "genre_frequency": fig_genre.to_html(full_html=False),
-        "top_movies": fig_top.to_html(full_html=False),
-        "genre_rating_heatmap": fig_heat.to_html(full_html=False),
-    }
+    visualizations = create_visualizations(df)
 
     # ======================
     # LOAD MODEL METRICS (optional)
