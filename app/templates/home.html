@@ -39,19 +39,27 @@
 </div>
 
 <div class="row">
-    {% for m in movies %}
-    <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-3">
-        <a class="text-decoration-none text-light" href="{{ url_for('movie_detail', movie_id=m.movieId) }}">
-            <div class="card h-100 bg-dark border-0 shadow-sm">
-                <div class="card-body">
-                    <h6 class="card-title mb-1">{{ m.title }}</h6>
-                    <div class="small text-muted">{{ m.genres }}</div>
-                    <div class="small text-warning mt-2">Xem chi tiết → gợi ý tương tự</div>
+    {% if movies and movies|length > 0 %}
+    <div class="list-group mt-3">
+        {% for m in movies %}
+        <a href="{{ url_for('movie_detail', movie_id=m.movieId) }}"
+            class="list-group-item list-group-item-action bg-dark text-light border-secondary">
+
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">{{ m.title }}</h6>
+                    <small class="text-muted">{{ m.genres }}</small>
                 </div>
+                <span class="badge bg-warning text-dark">Xem</span>
             </div>
+
         </a>
+        {% endfor %}
     </div>
-    {% endfor %}
+    {% else %}
+    <p class="text-muted mt-3">Không tìm thấy phim phù hợp.</p>
+    {% endif %}
+
 </div>
 {% else %}
 <div class="alert alert-warning">Không tìm thấy phim phù hợp. Thử từ khoá khác nhé.</div>
