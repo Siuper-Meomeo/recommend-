@@ -1,0 +1,26 @@
+{
+  "K": 10,
+  "holdout_k": 5,
+  "like_threshold": 4.0,
+  "min_ratings_per_user": 10,
+  "n_sample_users": 500,
+  "n_eval_users_knn": 495,
+  "n_eval_users_svd": 495,
+  "n_eval_users_cb": 491,
+  "collaborative_svd": {
+    "note": "Used for rating prediction only",
+    "rmse": 0.9225449996587064,
+    "mae": 0.714747997795362,
+    "precision@10": 0.024242424242424208,
+    "recall@10": 0.048484848484848415
+  },
+  "collaborative_itemknn": {
+    "note": "Used for top-N recommendations",
+    "precision@10": 0.09676767676767717,
+    "recall@10": 0.19353535353535434
+  },
+  "content_based_user_profile": {
+    "precision@10": 0.08004073319755638,
+    "recall@10": 0.16008146639511275
+  }
+}

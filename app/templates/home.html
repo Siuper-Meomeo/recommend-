@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+
+<div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+    <div>
+        <h2 class="mb-1">Tìm phim</h2>
+        <p class="text-muted mb-0">
+            Guest: xem chi tiết phim để nhận gợi ý tương tự (Content-based).
+            {% if session.get("user_id") %}
+            Bạn đã login → vào “For You” để nhận gợi ý cá nhân hoá.
+            {% else %}
+            Login để dùng “For You”.
+            {% endif %}
+        </p>
+    </div>
+
+    {% if session.get("user_id") %}
+    <a class="btn btn-warning" href="{{ url_for('for_you') }}">For You</a>
+    {% else %}
+    <a class="btn btn-outline-warning" href="{{ url_for('login') }}">Login</a>
+    {% endif %}
+</div>
+
+<form method="POST" class="card card-body bg-secondary mb-4 border-0">
+    <label class="form-label mb-2" for="query">Nhập tên phim</label>
+    <div class="input-group">
+        <input class="form-control" type="text" id="query" name="query" value="{{ query or '' }}"
+            placeholder="VD: Toy Story, Batman..." required>
+        <button class="btn btn-warning" type="submit">Tìm</button>
+    </div>
+</form>
+
+{% if query %}
+{% if movies and movies|length > 0 %}
+<div class="d-flex align-items-center justify-content-between mb-2">
+    <h5 class="mb-0">Kết quả</h5>
+    <span class="text-muted small">{{ movies|length }} phim</span>
+</div>
+
+<div class="row">
+    {% for m in movies %}
+    <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-3">
+        <a class="text-decoration-none text-light" href="{{ url_for('movie_detail', movie_id=m.movieId) }}">
+            <div class="card h-100 bg-dark border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title mb-1">{{ m.title }}</h6>
+                    <div class="small text-muted">{{ m.genres }}</div>
+                    <div class="small text-warning mt-2">Xem chi tiết → gợi ý tương tự</div>
+                </div>
+            </div>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-warning">Không tìm thấy phim phù hợp. Thử từ khoá khác nhé.</div>
+{% endif %}
+{% endif %}
+
+{% endblock %}

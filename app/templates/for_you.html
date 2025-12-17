@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}For You{% endblock %}
+{% block content %}
+
+<div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+    <div>
+        <h2 class="mb-1">For You</h2>
+        <p class="text-muted mb-0">
+            {% if mode == "collab" %}
+            Gợi ý cá nhân hoá dựa trên hành vi người dùng tương tự.
+            {% else %}
+            Gợi ý dựa trên nội dung phim bạn đã thích (cold-start).
+            {% endif %}
+        </p>
+    </div>
+    <a class="btn btn-outline-light" href="{{ url_for('home') }}">← Về Home</a>
+</div>
+
+<div class="d-flex align-items-center justify-content-between mb-2">
+    <div class="text-muted small">
+        Bạn có <b>{{ n_ratings }}</b> ratings. Ngưỡng chuyển sang Collaborative: <b>{{ k_threshold }}</b>.
+    </div>
+
+    {% if mode == "collab" %}
+    <span class="badge bg-warning text-dark">Collaborative (Warm-start)</span>
+    {% else %}
+    <span class="badge bg-info text-dark">Content-based (Cold-start)</span>
+    {% endif %}
+</div>
+
+{% if explanation %}
+<div class="alert alert-secondary">
+    {{ explanation }}
+</div>
+{% endif %}
+
+{% if recs and recs|length > 0 %}
+<div class="row">
+    {% for m in recs %}
+    <div class="col-12 col-sm-6 col-xl-4 mb-3">
+        <a class="text-decoration-none text-light" href="{{ url_for('movie_detail', movie_id=m.movieId) }}">
+            <div class="card h-100 bg-dark border-0 shadow-sm text-light">
+                {% if m.poster_url %}
+                <img src="{{ m.poster_url }}" class="card-img-top" alt="{{ m.title }}"
+                    style="object-fit:cover; height: 320px;">
+                {% else %}
+                <div class="d-flex align-items-center justify-content-center bg-secondary" style="height: 320px;">
+                    <span class="text-light-50">No Poster</span>
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    <h6 class="card-title mb-1">{{ m.title }}</h6>
+                    <div class="small text-muted mb-2">{{ m.genres }}</div>
+                    <div class="small">⭐ {{ '%.2f'|format(m.avg_rating) }}</div>
+                </div>
+            </div>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info">
+    Chưa có gợi ý. Hãy rate thêm một vài phim để hệ thống cá nhân hoá tốt hơn.
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,13 @@
+flask
+pandas
+numpy
+scikit-learn
+requests
+matplotlib
+scipy
+plotly
+tqdm
+requests
+python-dotenv
+gunicorn
+pyarrow
