@@ -32,7 +32,7 @@ app = Flask(__name__, template_folder="templates", static_folder="static")
 app.secret_key = "maimeo"
 
 # init system at start - cache models and data to save memory
-# init_system()
+init_system()
 
 # admin password
 ADMIN_PASSWORD = "admin123"
