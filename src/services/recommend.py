@@ -27,7 +27,7 @@ MIN_RATINGS_FOR_COLLAB = 10  # Duy nhất 1 threshold
 MIN_RATINGS_FOR_CF = MIN_RATINGS_FOR_COLLAB  # Alias for backward compatibility
 
 # ========== PATHS & GLOBAL CACHE ==========
-BASE_DIR = Path(__file__).resolve().parents[1]
+BASE_DIR = Path(__file__).resolve().parents[2]
 MODELS_DIR = BASE_DIR / "data" / "processed" / "models"
 KNN_PATH = MODELS_DIR / "item_knn.pkl"
 
